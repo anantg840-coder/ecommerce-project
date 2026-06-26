@@ -10,7 +10,12 @@ public interface CategoryService {
     void setAllcategories(Category category);
 
 
-    String deletecategory(long categoryId);
+    String deleteCategory(long categoryId);
 
-    String updateCategory(Category category, long categoryId);
+    Category updateCategory(Category category, long categoryId);
 }
+
+
+
+
+

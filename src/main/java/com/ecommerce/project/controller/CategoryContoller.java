@@ -37,26 +37,38 @@ public class CategoryContoller {
     public ResponseEntity<String> deleteCategory(@PathVariable Long categoryId) {
 
         try {
-            String status = categoryService.deletecategory(categoryId);
+            String status = categoryService.deleteCategory(categoryId);
             return new ResponseEntity<>(status, HttpStatus.OK);
-        }
-        catch (ResponseStatusException e) {
+
+        } catch (ResponseStatusException e) {
             return new ResponseEntity<>(e.getReason(), e.getStatusCode());
         }
+
+
     }
+
+
     @PutMapping("/public/categories/{categoryId}")
 
-    public ResponseEntity<String> updateCategory(@RequestBody Category category,
+    public ResponseEntity<Category> updateCategory(@RequestBody Category category,
                                                  @PathVariable long categoryId){
 
         try {
-            String status = categoryService.updateCategory(category,categoryId);
-            return new ResponseEntity<>(status, HttpStatus.OK);
-        }
-        catch(ResponseStatusException e){
-            return new ResponseEntity<>(e.getReason(),e.getStatusCode());
+
+            Category updatedCategory =
+                    categoryService.updateCategory(category, categoryId);
+
+            return new ResponseEntity<>(updatedCategory, HttpStatus.OK);
+
+        } catch (ResponseStatusException e) {
+
+            return new ResponseEntity<>(e.getStatusCode());
 
         }
+
+
+
+
 
     }
 
@@ -65,3 +77,6 @@ public class CategoryContoller {
 
 
 }
+
+
+
