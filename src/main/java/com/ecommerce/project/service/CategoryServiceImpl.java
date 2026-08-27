@@ -55,7 +55,11 @@ public class CategoryServiceImpl implements CategoryService {
     // POST
     @Override
     public CategoryDto setAllcategories(CategoryDto categoryDto) {
-        Category category = modelMapper.map(categoryDto,Category.class);
+        Category category = modelMapper.map(categoryDto, Category.class);
+
+        // FIX: Force ID to null so Hibernate knows this is a brand-new insert, not an update
+        category.setCategoryId(0);
+
         Category savedCategorybydatabase = categoryRepositries.findByCategoryname(category.getCategoryname());
         if (savedCategorybydatabase != null)
             throw new ApiException("Category with this name " + category.getCategoryname() + " already exist !!!  ");

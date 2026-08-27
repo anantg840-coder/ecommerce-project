@@ -87,5 +87,89 @@ public class defination {
 //
 //            “If I perform an operation on the parent entity, automatically perform the same operation on the related child entities.”
 //
+//
+//
+//                                     ┌───────────────┐
+//                                             │    CLIENT     │
+//            └───────┬───────┘
+//            │
+//            │ POST /signin
+//                            │ username + password
+//                            ▼
+//                                    ┌──────────────────────┐
+//                                    │   Security Filter    │
+//            │       Chain          │
+//            └──────────┬───────────┘
+//            │
+//            ▼
+//    Signin API
+//                            │
+//                                    ▼
+//                                    ┌──────────────────────┐
+//                                    │ AuthenticationManager│
+//            └──────────┬───────────┘
+//            │
+//            ▼
+//            ┌──────────────────────┐
+//            │ DaoAuthentication    │
+//            │ Provider             │
+//            └──────────┬───────────┘
+//            │
+//            ┌───────────┴───────────┐
+//            │                       │
+//            ▼                       ▼
+//    UserDetailsService         PasswordEncoder
+//                │                       │
+//                        ▼                       │
+//    UserRepository                 │
+//            │                       │
+//            ▼                       │
+//    DATABASE                    │
+//            │                       │
+//            ▼                       │
+//    UserDetailsImpl                │
+//            │                       │
+//            └───────────┬───────────┘
+//            │
+//            ▼
+//    Password Match
+//                            │
+//                                    ▼
+//    AUTHENTICATED
+//                            │
+//                                    ▼
+//    Generate JWT
+//                            │
+//                                    ▼
+//    Send JWT
+//                            │
+//                                    ▼
+//    CLIENT
+
+
+//    Browser
+//   │
+//           │ Cookie: JSESSIONID=ABC123
+//   ▼
+//    Spring Security Filter Chain
+//   │
+//           ▼
+//    Session Management
+//   │
+//           ▼
+//    Find session ABC123
+//   │
+//           ▼
+//    Retrieve Authentication
+//   │
+//           ▼
+//    SecurityContext
+//   │
+//           ▼
+//           "User is authenticated" ✅
+//           │
+//           ▼
+//    Controller
+
 
 }
