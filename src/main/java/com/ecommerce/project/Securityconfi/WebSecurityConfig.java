@@ -1,38 +1,38 @@
 package com.ecommerce.project.Securityconfi;
 
-
 import com.ecommerce.project.Repositries.RolesRepository;
-import com.ecommerce.project.model.AppRole;
-import com.ecommerce.project.model.Rolse;
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Bean;
 import com.ecommerce.project.Repositries.UserRepository;
 import com.ecommerce.project.Security.jwt.AuthEntryPoint;
 import com.ecommerce.project.Security.jwt.AuthTokenFIlter;
 import com.ecommerce.project.SecurityServices.UserDetailsServiceImpl;
+import com.ecommerce.project.model.AppRole;
+import com.ecommerce.project.model.Rolse;
 import com.ecommerce.project.model.User;
 import org.springframework.beans.factory.annotation.Autowired;
-
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
+import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configuration.WebSecurityCustomizer;
-
+import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
-import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
-
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
+import java.util.ArrayList;
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -48,10 +48,8 @@ public class WebSecurityConfig {
     @Autowired
     private AuthTokenFIlter authTokenFIlter;
 
-
-    // ==============================
-    // DAO AUTHENTICATION PROVIDER
-    // ==============================
+    @Value("${frontend.url:}")
+    private String frontendUrl;
 
     @Bean
     public DaoAuthenticationProvider authenticationProvider() {
@@ -60,123 +58,76 @@ public class WebSecurityConfig {
         return authenticationProvider;
     }
 
-
-    // ==============================
-    // AUTHENTICATION MANAGER
-    // ==============================
-
     @Bean
     public AuthenticationManager authenticationManager(
             AuthenticationConfiguration authConfig
     ) throws Exception {
-
         return authConfig.getAuthenticationManager();
     }
 
-
-    // ==============================
-    // PASSWORD ENCODER
-    // ==============================
-
     @Bean
     public PasswordEncoder passwordEncoder() {
-
         return new BCryptPasswordEncoder();
     }
 
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration config = new CorsConfiguration();
 
-    // ==============================
-    // SECURITY FILTER CHAIN
-    // ==============================
+        List<String> origins = new ArrayList<>();
+        origins.add("http://localhost:5173");
+        origins.add("http://localhost:3000");
+        if (frontendUrl != null && !frontendUrl.isBlank() && !origins.contains(frontendUrl)) {
+            origins.add(frontendUrl);
+        }
+
+        config.setAllowedOrigins(origins);
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setAllowCredentials(true);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
+    }
 
     @Bean
     public SecurityFilterChain filterChain(
             HttpSecurity http
     ) throws Exception {
-
         http
-
-                // Disable CSRF
+                .cors(cors -> cors.configurationSource(corsConfigurationSource()))
                 .csrf(csrf -> csrf.disable())
-
-
-                // Exception handling
                 .exceptionHandling(exception ->
                         exception.authenticationEntryPoint(
                                 authEntryPoint
                         )
                 )
-
-
-                // Stateless JWT authentication
                 .sessionManagement(session ->
                         session.sessionCreationPolicy(
                                 SessionCreationPolicy.STATELESS
                         )
                 )
-
-
-                // Authorization
                 .authorizeHttpRequests(auth -> auth
-
-                        // Authentication endpoints
-                        .requestMatchers(
-                                "/api/auth/**"
-                        ).permitAll()
-
-                        // H2 Console
-                        .requestMatchers(
-                                "/h2-console/**"
-                        ).permitAll()
-
-                        // Spring error endpoint
-                        .requestMatchers(
-                                "/error"
-                        ).permitAll()
-
-                        // Swagger
-                        .requestMatchers(
-                                "/v3/api-docs/**"
-                        ).permitAll()
-
-                        .requestMatchers(
-                                "/swagger-ui/**"
-                        ).permitAll()
-
-                        // Test endpoints
-                        .requestMatchers(
-                                "/api/test/**"
-                        ).permitAll()
-
-                        // Images
-                        .requestMatchers(
-                                "/images/**"
-                        ).permitAll()
-
-                        // Sign in
-                        .requestMatchers(
-                                "/signin"
-                        ).permitAll()
-
-                        // Everything else requires authentication
+                        .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers("/api/auth/**").permitAll()
+                        .requestMatchers("/api/public/**").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()
+                        .requestMatchers("/error").permitAll()
+                        .requestMatchers("/v3/api-docs/**").permitAll()
+                        .requestMatchers("/swagger-ui/**").permitAll()
+                        .requestMatchers("/api/test/**").permitAll()
+                        .requestMatchers("/images/**").permitAll()
+                        .requestMatchers("/signin").permitAll()
                         .anyRequest().authenticated()
                 )
-
-
-                // Authentication provider
                 .authenticationProvider(
                         authenticationProvider()
                 )
-
-
-                // JWT filter
                 .addFilterBefore(
                         authTokenFIlter,
                         UsernamePasswordAuthenticationFilter.class
                 )
-
-
-                // H2 Console uses frames
                 .headers(headers ->
                         headers.frameOptions(
                                 HeadersConfigurer.FrameOptionsConfig
@@ -184,27 +135,18 @@ public class WebSecurityConfig {
                         )
                 );
 
-
         return http.build();
     }
 
-
-    // ==============================
-    // WEB SECURITY CUSTOMIZER
-    // ==============================
-
     @Bean
     public WebSecurityCustomizer webSecurityCustomizer() {
-
         return web -> web.ignoring().requestMatchers(
-
                 "/v2/api-docs",
                 "/configuration/ui",
                 "/swagger-resources/**",
                 "/configuration/security",
                 "/swagger-ui.html",
                 "/webjars/**"
-
         );
     }
 
@@ -215,7 +157,6 @@ public class WebSecurityConfig {
             PasswordEncoder passwordEncoder
     ) {
         return args -> {
-            // 1. Seed Roles if they don't exist
             if (rolesRepository.count() == 0) {
                 Rolse userRole = new Rolse();
                 userRole.setRoleName(AppRole.ROLE_USER);
@@ -234,7 +175,6 @@ public class WebSecurityConfig {
                 System.out.println("=================================");
             }
 
-            // 2. Seed Default User if it doesn't exist
             if (!userRepository.existsByUsername("user1")) {
                 User user = new User(
                         "user1",
@@ -252,10 +192,4 @@ public class WebSecurityConfig {
             }
         };
     }
-
-
-
-
-
 }
-

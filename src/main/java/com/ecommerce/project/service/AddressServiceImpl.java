@@ -9,13 +9,11 @@ import com.ecommerce.project.model.User;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.web.bind.annotation.PutMapping;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
-public class AddressServiceImpl implements AddressService{
+public class AddressServiceImpl implements AddressService {
 
     @Autowired
     private AddressRepository addressRepository;
@@ -27,49 +25,43 @@ public class AddressServiceImpl implements AddressService{
     private ModelMapper modelMapper;
 
     @Override
-    public AddressDto createAddress(AddressDto addressDto0, User user) {
-        Address address = modelMapper.map(addressDto0,Address.class);
+    public AddressDto createAddress(AddressDto addressDto, User user) {
+        Address address = modelMapper.map(addressDto, Address.class);
         List<Address> addressList = user.getAddress();
         addressList.add(address);
         user.setAddress(addressList);
         address.setUser(user);
-        Address savedaddress = addressRepository.save(address);
-        return modelMapper.map(savedaddress,AddressDto.class);
-
-
-
+        Address savedAddress = addressRepository.save(address);
+        return modelMapper.map(savedAddress, AddressDto.class);
     }
 
     @Override
     public List<AddressDto> getAllAddresses() {
         List<Address> addressList = addressRepository.findAll();
-        if(addressList.isEmpty()){
+        if (addressList.isEmpty()) {
             throw new ApiException("No address found");
         }
-        List<AddressDto> addressDto = addressList.stream()
+        return addressList.stream()
                 .map(address -> modelMapper.map(address, AddressDto.class))
                 .toList();
-
-        return addressDto;
     }
 
     @Override
     public AddressDto getAddressById(Long addressId) {
         Address address = addressRepository.findById(addressId)
                 .orElseThrow(() -> new ApiException("Address not found"));
-        return modelMapper.map(address,AddressDto.class);
+        return modelMapper.map(address, AddressDto.class);
     }
 
     @Override
     public List<AddressDto> getUserAddresses(User user) {
         List<Address> addresses = user.getAddress();
-        if(addresses.isEmpty()){
+        if (addresses.isEmpty()) {
             throw new ApiException("No address found");
         }
-        List<AddressDto> addressDto = addresses.stream()
-                .map(address -> modelMapper.map(address,AddressDto.class))
+        return addresses.stream()
+                .map(address -> modelMapper.map(address, AddressDto.class))
                 .toList();
-        return addressDto;
     }
 
     @Override
@@ -81,14 +73,13 @@ public class AddressServiceImpl implements AddressService{
         address.setStreet(addressDto.getStreet());
         address.setState(addressDto.getState());
         address.setBuildingName(addressDto.getBuildingName());
-        Address savedaddress = addressRepository.save(address);
+        Address savedAddress = addressRepository.save(address);
 
         User user = address.getUser();
         user.getAddress().removeIf(address1 -> address1.getAddress_id().equals(addressId));
-        user.getAddress().add(savedaddress);
+        user.getAddress().add(savedAddress);
         userRepository.save(user);
-        return modelMapper.map(savedaddress,AddressDto.class);
-        
+        return modelMapper.map(savedAddress, AddressDto.class);
     }
 
     @Override
@@ -99,8 +90,6 @@ public class AddressServiceImpl implements AddressService{
         user.getAddress().removeIf(address1 -> address1.getAddress_id().equals(addressId));
         userRepository.save(user);
         addressRepository.delete(address);
-        return "address has been deleted sucessfully with addressId " +  addressId;
+        return "address has been deleted sucessfully with addressId " + addressId;
     }
-
-
 }

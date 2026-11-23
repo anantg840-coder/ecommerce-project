@@ -18,6 +18,7 @@ import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -47,6 +48,9 @@ public class ProductServiceImpl implements ProductService{
 
     @Autowired
     private FileService fileService;
+
+    @Value("${image.base.url}")
+    private String imageBaseUrl;
 
     @Value("${project.image}")
     private String path;
@@ -82,19 +86,41 @@ public class ProductServiceImpl implements ProductService{
 
     }
 
+
     @Override
-    public ProductResponse getAllProducts(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {
+    public ProductResponse getAllProducts(Integer pageNumber, Integer pageSize, String sortBy, String sortOrder, String keyword, String category) {
         Sort sortByAndOrder = sortOrder.equalsIgnoreCase("asc")
                 ? Sort.by(sortBy).ascending()
                 : Sort.by(sortBy).descending();
         Pageable pageDetails = PageRequest.of(pageNumber, pageSize, sortByAndOrder);
-        Page<Product> productPage = productRepositories.findAll(pageDetails);
+
+        // Use conjunction() instead of Specification.where(null) to avoid ambiguity
+        Specification<Product> spec = (root, query, criteriaBuilder) -> criteriaBuilder.conjunction();
+
+        if (keyword != null && !keyword.isEmpty()) {
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(criteriaBuilder.lower(root.get("productName")), "%" + keyword.toLowerCase() + "%"));
+        }
+
+        if (category != null && !category.isEmpty()) {
+            // FIXED: Added lowercase conversion and wildcards (%) for robust category matching
+            spec = spec.and((root, query, criteriaBuilder) ->
+                    criteriaBuilder.like(
+                            criteriaBuilder.lower(root.get("category").get("categoryname")),
+                            "%" + category.toLowerCase() + "%"
+                    ));
+        }
+
+        Page<Product> productPage = productRepositories.findAll(spec, pageDetails);
 
         List<Product> productList = productPage.getContent();
         List<ProductDTO> productDTOS = productList.stream()
-                .map(product -> modelMapper.map(product,ProductDTO.class))
+                .map(product -> {
+                    ProductDTO productDTO = modelMapper.map(product, ProductDTO.class);
+                    productDTO.setImage(constructImagesUrl(product.getImage()));
+                    return productDTO;
+                })
                 .collect(Collectors.toList());
-
 
         ProductResponse productResponse = new ProductResponse();
         productResponse.setContent(productDTOS);
@@ -104,14 +130,20 @@ public class ProductServiceImpl implements ProductService{
         productResponse.setPageSize(pageSize);
         productResponse.setLastPage(productPage.isLast());
 
-
-
         return productResponse;
-
-
-
-
     }
+
+
+
+
+
+
+
+    private String constructImagesUrl(String imageName){
+        return imageBaseUrl.endsWith("/") ? imageBaseUrl + imageName : imageBaseUrl + "/" + imageName;
+    }
+
+
 
     @Override
     public ProductResponse searchByCategory(Long categoryId, Integer pageNumber, Integer pageSize, String sortBy, String sortOrder) {

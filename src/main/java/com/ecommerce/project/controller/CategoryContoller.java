@@ -5,6 +5,7 @@ import com.ecommerce.project.PayLoad.CategoryResponse;
 import com.ecommerce.project.PayLoad.ProductDTO;
 import com.ecommerce.project.config.AppConstant;
 import com.ecommerce.project.service.CategoryService;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 
 
@@ -23,6 +24,7 @@ public class CategoryContoller {
     }
 
 
+    @Tag(name = "Category Apis", description = "Api for managing categories")
     @GetMapping("/public/categories")
     public ResponseEntity<CategoryResponse> getAllCategories(
         @RequestParam(name = "pageNumber", defaultValue = AppConstant.PAGE_NUMBER,required = false) Integer pageNumber,

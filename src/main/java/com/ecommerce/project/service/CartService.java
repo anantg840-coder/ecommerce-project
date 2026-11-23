@@ -1,6 +1,7 @@
 package com.ecommerce.project.service;
 
 import com.ecommerce.project.PayLoad.CartDTO;
+import com.ecommerce.project.PayLoad.CartItemDTO;
 import com.ecommerce.project.PayLoad.ProductDTO;
 import jakarta.transaction.Transactional;
 
@@ -21,4 +22,6 @@ public interface CartService {
 
 
     void updateProductInCarts(Long cartId, Long productId);
+
+    String createdOrUpdateCartWithItems(List<CartItemDTO> cartItems);
 }
